@@ -1,0 +1,98 @@
+#
+# Device-specific: Xiaomi Mi Desk Lamp 1S
+# 
+# Source: https://devices.esphome.io/devices/Mi-Desklamp-1S
+#
+
+esp32:
+  board: esp32doit-devkit-v1
+  framework:
+    type: esp-idf
+    sdkconfig_options:
+      CONFIG_FREERTOS_UNICORE: y
+    advanced:
+      ignore_efuse_custom_mac: true
+      ignore_efuse_mac_crc: true
+
+# Enable Web server
+web_server:
+  port: 80
+  version: 3
+
+sensor:
+  # Mi Desk Lamp 1S Config
+  - platform: rotary_encoder
+    id: rotation
+    pin_a: GPIO27
+    pin_b: GPIO26
+    resolution: 2
+    on_value:
+      then:
+        - if:
+            condition:
+              # Check if Button is pressed while rotating
+              lambda: "return id(button1).state;"
+            then:
+              # If Button is pressed, change CW/WW
+              - lambda: |-
+                  auto min_temp = id(light1).get_traits().get_min_mireds();
+                  auto max_temp = id(light1).get_traits().get_max_mireds();
+                  auto cur_temp = id(light1).current_values.get_color_temperature();
+                  auto new_temp = max(min_temp, min(max_temp, cur_temp + (x*10)));
+                  auto call = id(light1).turn_on();
+                  call.set_color_temperature(new_temp);
+                  call.perform();
+            else:
+              # If Button is not pressed, change brightness
+              - light.dim_relative:
+                  id: light1
+                  relative_brightness: !lambda |-
+                    return x / 25.0;
+        # Reset Rotation to 0
+        - sensor.rotary_encoder.set_value:
+            id: rotation
+            value: 0
+
+binary_sensor:
+  - platform: gpio
+    id: button1
+    pin:
+      number: GPIO33
+      inverted: True
+      mode: INPUT_PULLDOWN
+    on_click:
+      then:
+        - light.toggle:
+            id: light1
+            transition_length: 0.2s
+
+output:
+  - platform: ledc
+    pin: GPIO2
+    id: output_cw
+    frequency: 40000Hz
+    power_supply: power
+  - platform: ledc
+    pin: GPIO4
+    id: output_ww
+    power_supply: power
+    frequency: 40000Hz
+
+power_supply:
+  - id: power
+    pin: GPIO12
+    enable_time: 0s
+    keep_on_time: 0s
+
+light:
+  - platform: cwww
+    id: light1
+    default_transition_length: 0s
+    constant_brightness: true
+    name: "Light"
+    cold_white: output_cw
+    warm_white: output_ww
+    cold_white_color_temperature: 4800 K
+    warm_white_color_temperature: 2500 K #2500k is the original value of the lamp. To correct binning for 2700k to look more like 2700k use 2650k instead
+    restore_mode: ALWAYS_OFF
+    gamma_correct: 0
