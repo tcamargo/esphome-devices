@@ -1,0 +1,28 @@
+#
+# Common configuration for most devices.
+#
+
+# Text sensors with general information
+text_sensor:
+  - platform: version
+    name: Version
+    
+  - platform: wifi_info
+    ip_address:
+      name: IP Address
+
+# Common sensors
+sensor:
+  - name: Uptime
+    platform: uptime
+    update_interval: 120s
+
+  - name: Wifi Signal
+    platform: wifi_signal
+    update_interval: 120s
+
+
+# Restart button
+button:
+  - name: Restart
+    platform: restart

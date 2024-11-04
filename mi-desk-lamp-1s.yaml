@@ -14,11 +14,6 @@ esp32:
       ignore_efuse_custom_mac: true
       ignore_efuse_mac_crc: true
 
-# Enable Web server
-web_server:
-  port: 80
-  version: 3
-
 sensor:
   # Mi Desk Lamp 1S Config
   - platform: rotary_encoder
